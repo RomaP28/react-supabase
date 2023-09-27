@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import supabase from '../supabase';
 
 function isValidHttpUrl(string) {
     let url;
@@ -16,30 +17,27 @@ function NewFactForm({ categories, setFacts, setShowForm }) {
     const [text, setText] = useState('');
     const [source, setSource] = useState('http://google.com');
     const [category, setCategory] = useState('');
+    const [isUploading, setIsUploading] = useState(false);
     const textLength = text.length;
 
-    function handleSubmit(e) {
+    async function handleSubmit(e) {
         e.preventDefault();
 
         if(text && isValidHttpUrl(source) && category && text.length <= 200){
-            const newFact = {
-                    id: Math.round(Math.random() * 10000000),
-                    text,
-                    source,
-                    category,
-                    votesInteresting: 0,
-                    votesMindblowing: 0,
-                    votesFalse: 0,
-                    createdIn: new Date().getFullYear(),
-                };
-            setFacts((facts) => [newFact, ...facts]);
+            setIsUploading(true);
+            const { data: newFact, error } = await supabase
+                .from('facts')
+                .insert([{ text, source, category }])
+                .select();
+
+            if(!error) setFacts((facts) => [newFact[0], ...facts]);
+
+            setText('');
+            setSource('');
+            setCategory('');
+            setIsUploading(false);
+            setShowForm(false);
         }
-
-        setText('');
-        setSource('');
-        setCategory('');
-
-        setShowForm(false);
     }
 
     return (
@@ -48,23 +46,26 @@ function NewFactForm({ categories, setFacts, setShowForm }) {
                    placeholder="Share a fact with the world..."
                    value={text}
                    onChange={(e) => setText(e.target.value)}
+                   disabled={isUploading}
             />
             <span>{200 - textLength}</span>
             <input type="text"
                    placeholder="Trustworthy source..."
                    value={source}
                    onChange={(e) => setSource(e.target.value)}
+                   disabled={isUploading}
             />
             <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
+                disabled={isUploading}
             >
                 <option value="">Choose category:</option>
                 {categories.map(cat => (
                     <option value={cat.name} key={cat.name}>{cat.name.toUpperCase()}</option>
                 ))}
             </select>
-            <button className="btn btn-large">Post</button>
+            <button className="btn btn-large" disabled={isUploading}>Post</button>
         </form>
     )
 }
