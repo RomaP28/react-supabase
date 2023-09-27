@@ -24,6 +24,7 @@ function App() {
     const [isLoading, setIsLoading] = useState(false);
     const [currentCategory, setCurrentCategory] = useState('all');
 
+
     useEffect(() => {
         async function getFacts() {
             setIsLoading(true);
